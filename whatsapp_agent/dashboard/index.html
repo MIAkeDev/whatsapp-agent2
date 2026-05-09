@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Agente WhatsApp — Dashboard</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f2f5;color:#1a1a2e}
+    .header{background:#1a1a2e;color:white;padding:16px 28px;display:flex;align-items:center;gap:12px}
+    .header h1{font-size:18px;font-weight:600}
+    .dot{width:10px;height:10px;border-radius:50%;background:#25d366;animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    .main{padding:24px 28px;max-width:1200px;margin:0 auto}
+    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;margin-bottom:24px}
+    .stat{background:white;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+    .stat-label{font-size:11px;color:#888;font-weight:600;text-transform:uppercase;margin-bottom:8px}
+    .stat-value{font-size:30px;font-weight:700}
+    .verde .stat-value{color:#16a34a}.azul .stat-value{color:#2563eb}.naranja .stat-value{color:#ea580c}.gris .stat-value{color:#4b5563}
+    .card{background:white;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:20px}
+    .card-header{padding:18px 20px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between}
+    .card-title{font-size:15px;font-weight:600}
+    .card-body{padding:20px}
+    .form-row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+    .field{display:flex;flex-direction:column;gap:6px;flex:1;min-width:180px}
+    .field label{font-size:12px;font-weight:600;color:#555}
+    .field input,.field textarea{padding:9px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;outline:none;font-family:inherit}
+    .field input:focus,.field textarea:focus{border-color:#2563eb}
+    .btn{padding:10px 20px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:600}
+    .btn-primary{background:#2563eb;color:white}.btn-primary:disabled{background:#93c5fd;cursor:not-allowed}
+    .btn-success{background:#16a34a;color:white;font-size:13px;padding:8px 16px}
+    .badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px}
+    .b-verde{background:#dcfce7;color:#16a34a}.b-amarillo{background:#fef9c3;color:#ca8a04}
+    .b-gris{background:#f3f4f6;color:#6b7280}.b-rojo{background:#fee2e2;color:#dc2626}.b-naranja{background:#ffedd5;color:#ea580c}
+    .alerta{background:#fffbeb;border:2px solid #f59e0b;border-radius:12px;padding:16px;margin-bottom:10px}
+    .alerta-top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+    .alerta-num{font-weight:700;font-size:15px}
+    .alerta-nombre{color:#6b7280;font-size:13px}
+    .alerta-msg{background:white;border-radius:8px;padding:10px 12px;font-size:14px;border-left:3px solid #f59e0b;margin-bottom:8px}
+    .score-row{display:flex;align-items:center;gap:8px}
+    .score-bar{flex:1;height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden}
+    .score-fill{height:100%;border-radius:3px}
+    .filtros{padding:14px 20px;border-bottom:1px solid #f3f4f6;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .fbtn{padding:5px 14px;border-radius:20px;border:1.5px solid #e5e7eb;font-size:13px;cursor:pointer;background:white}
+    .fbtn.activo{border-color:#2563eb;background:#eff6ff;color:#2563eb;font-weight:600}
+    table{width:100%;border-collapse:collapse}
+    th{padding:10px 16px;text-align:left;font-size:11px;font-weight:600;color:#888;background:#fafafa}
+    td{padding:11px 16px;font-size:14px;border-top:1px solid #f3f4f6;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    tr:hover td{background:#f9fafb}
+    .empty{text-align:center;padding:40px;color:#9ca3af}
+    .toast{position:fixed;top:20px;right:20px;z-index:999;background:#1a1a2e;color:white;padding:14px 20px;border-radius:10px;font-size:14px;max-width:320px;box-shadow:0 4px 16px rgba(0,0,0,.3)}
+    .ws-status{font-size:12px;color:#9ca3af;display:flex;align-items:center;gap:6px;margin-left:auto}
+    .ws-dot{width:8px;height:8px;border-radius:50%}
+    .info-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px;font-size:13px;color:#1e40af;margin-bottom:16px}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useCallback,useRef}=React;
+const API=window.location.origin;
+const WS_URL=API.replace("https://","wss://").replace("http://","ws://")+"/ws";
+const CINFO={INTERESADO:{label:"Interesado",cls:"b-verde",color:"#16a34a"},DUDOSO:{label:"Dudoso",cls:"b-amarillo",color:"#ca8a04"},CONSULTA_RANDOM:{label:"Random",cls:"b-gris",color:"#6b7280"},NO_INTERESADO:{label:"No interesado",cls:"b-rojo",color:"#dc2626"},FUERA_DE_TEMA:{label:"Fuera de tema",cls:"b-naranja",color:"#ea580c"}};
+const sc=s=>s>=70?"#16a34a":s>=40?"#ca8a04":"#dc2626";
+
+function App(){
+  const[stats,setStats]=useState({total_enviados:0,total_respondieron:0,total_interesados:0,tasa_respuesta:0,alertas_sin_ver:0});
+  const[alertas,setAlertas]=useState([]);
+  const[respuestas,setRespuestas]=useState([]);
+  const[filtro,setFiltro]=useState("TODOS");
+  const[cargando,setCargando]=useState(false);
+  const[toast,setToast]=useState(null);
+  const[wsOk,setWsOk]=useState(false);
+  const[archivo,setArchivo]=useState(null);
+  const[campana,setCampana]=useState("");
+  const[mensaje,setMensaje]=useState("");
+  const wsRef=useRef(null);
+  const toastar=m=>{setToast(m);setTimeout(()=>setToast(null),4500)};
+  const cargar=useCallback(async()=>{
+    try{
+      const[s,a,r]=await Promise.all([fetch(`${API}/dashboard/stats`).then(x=>x.json()),fetch(`${API}/dashboard/alertas`).then(x=>x.json()),fetch(`${API}/dashboard/respuestas`).then(x=>x.json())]);
+      setStats(s);setAlertas(a);setRespuestas(r);
+    }catch(e){}
+  },[]);
+  useEffect(()=>{
+    function conectar(){
+      const ws=new WebSocket(WS_URL);wsRef.current=ws;
+      ws.onopen=()=>setWsOk(true);
+      ws.onclose=()=>{setWsOk(false);setTimeout(conectar,3000)};
+      ws.onmessage=e=>{
+        const d=JSON.parse(e.data);
+        if(d.tipo==="ALERTA_INTERESADO"){
+          setAlertas(p=>[{id:Date.now(),...d,ultimo_mensaje:d.mensaje,vista:false,creada_en:d.timestamp},...p]);
+          setStats(p=>({...p,alertas_sin_ver:p.alertas_sin_ver+1}));
+          toastar("🔔 Cliente interesado: "+(d.nombre||d.numero)+" (score "+Math.round(d.score)+")");
+          cargar();
+        }
+      };
+    }
+    conectar();cargar();
+    const iv=setInterval(cargar,30000);
+    return()=>{clearInterval(iv);wsRef.current?.close()};
+  },[cargar]);
+  const enviar=async()=>{
+    if(!archivo||!campana)return toastar("Selecciona un Excel y escribe el nombre");
+    setCargando(true);
+    const form=new FormData();
+    form.append("archivo",archivo);form.append("nombre_campana",campana);
+    if(mensaje)form.append("mensaje_personalizado",mensaje);
+    try{
+      const resp=await fetch(`${API}/campana/crear`,{method:"POST",body:form});
+      const d=await resp.json();
+      if(resp.ok){toastar("✅ Campaña iniciada — "+d.total_numeros+" números | columna: "+d.columna_detectada);setCampana("");setArchivo(null);setMensaje("");setTimeout(cargar,2000);}
+      else toastar("❌ "+d.detail);
+    }catch(e){toastar("Error de conexión")}
+    setCargando(false);
+  };
+  const exportar=()=>{
+    const rows=respuestas.filter(r=>r.clasificacion==="INTERESADO");
+    const csv=["Número,Score,Mensaje,Fecha",...rows.map(r=>r.numero+","+r.score+',"'+(r.texto||"").replace(/"/g,'""')+'",'+r.recibida_en)].join("\n");
+    const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="interesados.csv";a.click();
+  };
+  const marcarVista=async id=>{
+    await fetch(`${API}/dashboard/alertas/${id}/vista`,{method:"PATCH"});
+    setAlertas(p=>p.map(a=>a.id===id?{...a,vista:true}:a));
+    setStats(p=>({...p,alertas_sin_ver:Math.max(0,p.alertas_sin_ver-1)}));
+  };
+  const noVistas=alertas.filter(a=>!a.vista);
+  const filtradas=filtro==="TODOS"?respuestas:respuestas.filter(r=>r.clasificacion===filtro);
+  return(<>
+    {toast&&<div className="toast">{toast}</div>}
+    <div className="header">
+      <div className="dot"/>
+      <h1>Agente WhatsApp — Dashboard Bancario</h1>
+      <div className="ws-status"><div className="ws-dot" style={{background:wsOk?"#25d366":"#ef4444"}}/>{wsOk?"En vivo":"Reconectando..."}</div>
+    </div>
+    <div className="main">
+      <div className="stats">
+        <div className="stat azul"><div className="stat-label">Enviados</div><div className="stat-value">{stats.total_enviados.toLocaleString()}</div></div>
+        <div className="stat gris"><div className="stat-label">Respondieron</div><div className="stat-value">{stats.total_respondieron}</div></div>
+        <div className="stat verde"><div className="stat-label">Interesados</div><div className="stat-value">{stats.total_interesados}</div></div>
+        <div className="stat naranja"><div className="stat-label">Tasa respuesta</div><div className="stat-value">{stats.tasa_respuesta}%</div></div>
+      </div>
+      <div className="card">
+        <div className="card-header"><span className="card-title">📤 Nueva campaña</span></div>
+        <div className="card-body">
+          <div className="info-box">Detecta automáticamente columna <strong>CELULAR</strong> o <strong>TELF</strong>. Extrae todos los números por celda aunque haya 2 o 3 separados por guión. Descarta números fijos.</div>
+          <div className="form-row">
+            <div className="field"><label>Nombre campaña</label><input type="text" placeholder="Ej: Préstamos setiembre ILO" value={campana} onChange={e=>setCampana(e.target.value)}/></div>
+            <div className="field"><label>Archivo Excel (.xlsx o .xls)</label><input type="file" accept=".xlsx,.xls" onChange={e=>setArchivo(e.target.files[0])}/></div>
+          </div>
+          <div className="form-row" style={{marginTop:12}}>
+            <div className="field"><label>Mensaje (opcional — usa {"{nombre}"} para personalizar)</label><textarea rows={3} placeholder="Hola {nombre}, le contactamos con una propuesta especial. ¿Le gustaría saber más?" value={mensaje} onChange={e=>setMensaje(e.target.value)}/></div>
+            <button className="btn btn-primary" onClick={enviar} disabled={cargando} style={{alignSelf:"flex-end"}}>{cargando?"Enviando...":"🚀 Iniciar envío"}</button>
+          </div>
+        </div>
+      </div>
+      {noVistas.length>0&&<div className="card">
+        <div className="card-header"><span className="card-title">🔔 Clientes interesados</span><span className="badge b-rojo">{noVistas.length} nuevas</span></div>
+        <div className="card-body">
+          {noVistas.slice(0,10).map(a=>{const info=CINFO[a.clasificacion]||CINFO.CONSULTA_RANDOM;return(<div key={a.id} className="alerta">
+            <div className="alerta-top"><span style={{fontSize:20}}>🔔</span><div><div className="alerta-num">{a.nombre||a.numero}</div>{a.nombre&&<div className="alerta-nombre">{a.numero}</div>}</div><span className={"badge "+info.cls} style={{marginLeft:"auto"}}>{info.label}</span><button className="btn btn-primary" style={{padding:"4px 12px",fontSize:12}} onClick={()=>marcarVista(a.id)}>✓ Vista</button></div>
+            <div className="alerta-msg">"{a.ultimo_mensaje}"</div>
+            <div className="score-row"><span style={{fontSize:12,color:"#888"}}>Interés:</span><div className="score-bar"><div className="score-fill" style={{width:a.score+"%",background:sc(a.score)}}/></div><span style={{fontSize:12,fontWeight:700,minWidth:45,textAlign:"right",color:sc(a.score)}}>{Math.round(a.score)}/100</span></div>
+          </div>);})}
+        </div>
+      </div>}
+      <div className="card">
+        <div className="filtros">
+          <span style={{fontSize:13,fontWeight:600}}>Filtrar:</span>
+          {["TODOS","INTERESADO","DUDOSO","CONSULTA_RANDOM","NO_INTERESADO"].map(f=><button key={f} className={"fbtn"+(filtro===f?" activo":"")} onClick={()=>setFiltro(f)}>{f==="TODOS"?"Todos":CINFO[f]?.label||f}</button>)}
+          <button className="btn btn-success" style={{marginLeft:"auto"}} onClick={exportar}>⬇ Exportar interesados</button>
+        </div>
+        {filtradas.length===0?<div className="empty">No hay respuestas aún. Inicia una campaña para comenzar.</div>:<table>
+          <thead><tr><th>Número</th><th>Mensaje</th><th>Clasificación</th><th>Score</th><th>Hora</th></tr></thead>
+          <tbody>{filtradas.map((r,i)=>{const info=CINFO[r.clasificacion]||CINFO.CONSULTA_RANDOM;return(<tr key={i}><td style={{fontWeight:600}}>{r.numero}</td><td title={r.texto}>{r.texto}</td><td><span className={"badge "+info.cls}>{info.label}</span></td><td style={{fontWeight:700,color:sc(r.score||0)}}>{Math.round(r.score||0)}</td><td style={{color:"#888",fontSize:13}}>{new Date(r.recibida_en).toLocaleString("es-PE")}</td></tr>);})}</tbody>
+        </table>}
+      </div>
+    </div>
+  </>);
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

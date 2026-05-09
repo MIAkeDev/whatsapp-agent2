@@ -1,0 +1,36 @@
+# Web framework
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+python-multipart==0.0.12
+
+# LangGraph / LangChain
+langgraph==0.2.28
+langchain==0.3.1
+langchain-groq==0.2.1
+groq==0.11.0
+
+# WhatsApp / Meta
+requests==2.32.3
+httpx==0.27.2
+
+# Excel
+openpyxl==3.1.5
+pandas==2.2.3
+xlrd==2.0.1
+phonenumbers==8.13.44
+
+# Base de datos
+sqlalchemy==2.0.35
+asyncpg==0.29.0
+alembic==1.13.3
+
+# Redis
+redis==5.1.0
+aioredis==2.0.1
+
+# Config
+pydantic-settings==2.5.2
+python-dotenv==1.0.1
+
+# Utilidades
+websockets==13.1
