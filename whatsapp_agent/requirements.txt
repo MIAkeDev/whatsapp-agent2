@@ -21,7 +21,7 @@ phonenumbers==8.13.44
 
 # Base de datos
 sqlalchemy==2.0.35
-asyncpg==0.29.0
+asyncpg==0.30.0
 alembic==1.13.3
 
 # Redis
