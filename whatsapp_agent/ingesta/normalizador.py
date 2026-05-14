@@ -100,7 +100,7 @@ def leer_excel(ruta_archivo: str) -> dict:
             df = pd.read_excel(ruta_archivo, dtype=str, header=header_row)
             # Si las columnas tienen nombres reales (no Unnamed) es el header correcto
             cols_reales = [c for c in df.columns if "Unnamed" not in str(c)]
-            if len(cols_reales) >= 3:
+            if len(cols_reales) >= 1:
                 break
         except Exception:
             continue
