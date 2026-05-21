@@ -118,7 +118,7 @@ async def recibir_mensaje(request: Request, db: AsyncSession = Depends(get_db)):
                     Cliente.numeros_e164.cast(String).contains(numero)
                 )
             )
-            cliente = result.scalar_one_or_none()
+            cliente = result.scalars().first()
 
             # Registrar respuesta
             respuesta = Respuesta(
