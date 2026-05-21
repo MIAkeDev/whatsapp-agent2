@@ -15,7 +15,7 @@ from fastapi import FastAPI, UploadFile, File, Form, WebSocket, WebSocketDisconn
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, String
 
 from config.settings import settings
 from db.database import init_db, get_db
@@ -114,7 +114,9 @@ async def recibir_mensaje(request: Request, db: AsyncSession = Depends(get_db)):
 
             # Buscar cliente en BD
             result = await db.execute(
-                select(Cliente).where(Cliente.numeros_e164.contains([numero]))
+                select(Cliente).where(
+                    Cliente.numeros_e164.cast(String).contains(numero)
+                )
             )
             cliente = result.scalar_one_or_none()
 
