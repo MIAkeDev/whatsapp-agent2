@@ -36,6 +36,7 @@ class MetaWhatsAppClient:
             "type": "text",
             "text": {"preview_url": False, "body": mensaje},
         }
+        logger.error(f"ENVIANDO A: {numero} | URL: {self.base_url} | TOKEN: {settings.META_WHATSAPP_TOKEN[:20]}...")
         async with httpx.AsyncClient(timeout=30) as client:
             try:
                 resp = await client.post(self.base_url, headers=self.headers, json=payload)
