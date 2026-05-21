@@ -45,7 +45,7 @@ class MetaWhatsAppClient:
                     return msg_id, None
                 else:
                     error = data.get("error", {}).get("message", str(data))
-                    logger.error(f"Error Meta API {numero}: {error}")
+                    logger.error(f"Error Meta API {numero}: STATUS={resp.status_code} RESPUESTA={data}")
                     return None, error
             except Exception as e:
                 return None, str(e)
